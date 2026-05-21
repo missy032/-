@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>心力自检表</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f7f4f0;
+      --card: #fff;
+      --text: #2c2a28;
+      --muted: #6b6560;
+      --accent: #c45c4a;
+      --accent-soft: #f3e8e5;
+      --ok: #4a7c59;
+      --warn: #b8860b;
+      --danger: #c45c4a;
+      --border: #e8e2dc;
+      --radius: 12px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(48px + var(--safe-bottom));
+      -webkit-text-size-adjust: 100%;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { font-size: clamp(1.4rem, 5vw, 1.75rem); font-weight: 700; }
+    header p { margin-top: 8px; color: var(--muted); font-size: 0.9rem; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(44, 42, 40, 0.06);
+      padding: 20px 16px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 480px) { .card { padding: 24px; } }
+    .intro {
+      font-size: 0.9rem;
+      color: var(--muted);
+      padding-bottom: 14px;
+      border-bottom: 1px dashed var(--border);
+      margin-bottom: 4px;
+    }
+    .q {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .q:last-of-type { border-bottom: none; }
+    .q-head { display: flex; gap: 10px; align-items: flex-start; }
+    .q-num {
+      flex-shrink: 0;
+      width: 1.6rem;
+      height: 1.6rem;
+      line-height: 1.6rem;
+      text-align: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .q-text { font-size: 0.95rem; flex: 1; }
+    .opts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .opt { position: relative; }
+    .opt input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 1; }
+    .opt label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .opt input:checked + label {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    button {
+      font-family: inherit;
+      font-size: 1.05rem;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { transform: scale(0.99); }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      width: 100%;
+    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 12px; line-height: 1.5; }
+    #result { display: none; }
+    #result.show { display: block; }
+    .score-box { text-align: center; padding: 16px 0; }
+    .score-num {
+      font-size: clamp(2.5rem, 12vw, 3rem);
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .score-label { font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
+    .verdict {
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+    .verdict.ok { background: #e8f0ea; color: var(--ok); }
+    .verdict.warn { background: #faf5e6; color: #8a6914; }
+    .verdict.danger { background: var(--accent-soft); color: var(--danger); }
+    .verdict strong { display: block; margin-bottom: 6px; font-size: 1.05rem; }
+    .submit-status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .submit-status.show { display: block; }
+    .submit-status.ok { background: #e8f0ea; color: var(--ok); }
+    .submit-status.warn { background: #faf5e6; color: #8a6914; }
+    .submit-status.err { background: var(--accent-soft); color: var(--danger); }
+    .rules {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+    .rules li { margin-left: 1.2rem; margin-bottom: 4px; }
+    .err {
+      display: none;
+      color: var(--danger);
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+    .err.show { display: block; }
+    footer { text-align: center; margin-top: 24px; font-size: 0.78rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>心力自检表</h1>
+      <p>手机填写 · 约 2 分钟 · 提交后自动记录</p>
+    </header>
+
+    <form id="form" class="card">
+      <p class="intro">请根据<strong>最近两周</strong>的真实感受，逐题选择「是」或「否」。</p>
+
+      <div id="questions"></div>
+      <p class="err" id="err"></p>
+      <div class="actions">
+        <button type="submit" class="btn-primary" id="submitBtn">提交并查看得分</button>
+      </div>
+      <p class="hint">本表仅供自我觉察，不替代专业诊断。提交后仅记录分数与选项（匿名）。</p>
+    </form>
+
+    <section id="result" class="card">
+      <div class="score-box">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-label">总分（满分 20 分）</div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <p class="submit-status" id="submitStatus"></p>
+      <ul class="rules">
+        <li>每题选「是」：2 分；选「否」：0 分</li>
+        <li>0–6 分：心力较稳 · 7–12 分：略有透支 · 13–20 分：明显耗竭</li>
+      </ul>
+      <div class="actions">
+        <button type="button" class="btn-primary" id="again">再测一次</button>
+      </div>
+    </section>
+
+    <footer>心力自检表</footer>
+  </div>
+
+  <script>
+    // ========== 管理员配置：部署 Google 脚本后把 URL 贴在这里 ==========
+    const CONFIG = {
+      SUBMIT_URL: "",
+    };
+    // ====================================================================
+
+    const QUESTIONS = [
+      "最近常常觉得身体发沉，就算睡了 7 小时也提不起精神。",
+      "别人一皱眉或语气稍重，你就立刻开始反思是不是自己做错了什么。",
+      "明知道该做的事（比如回消息、交方案），却一再拖延，很久都动不了。",
+      "看到未读消息或工作提醒，第一反应是胸口发紧或想关掉手机。",
+      "和人聊完天之后，常常觉得「好累」，需要独处很久才能缓过来。",
+      "小事也容易烦躁（比如外卖晚了、网页加载慢），情绪反应明显大于事情本身。",
+      "曾经喜欢的事（追剧、做饭、散步）突然没兴趣了，觉得「没意思」。",
+      "夜里常常清醒、脑子很乱，反复回想白天的对话或没做完的事。",
+      "习惯说「我没事」，但心里已经连续两周以上处于低能量状态。",
+      "想改变现状，但连第一步该做什么都模糊不清。"
+    ];
+
+    const VERDICTS = [
+      {
+        max: 6,
+        cls: "ok",
+        level: "心力较稳",
+        title: "0–6 分 · 心力较稳",
+        text: "你的心力整体比较稳定，身体还有自然的恢复节奏。可以继续保持当下的作息与边界，偶尔给自己一点「什么都不用做」的时间。"
+      },
+      {
+        max: 12,
+        cls: "warn",
+        level: "略有透支",
+        title: "7–12 分 · 略有透支",
+        text: "心力已经出现轻微透支信号。建议开始做一些小调整：例如每天 15 分钟离线、减少一项非必要承诺、或和信任的人聊几句真实感受。"
+      },
+      {
+        max: 20,
+        cls: "danger",
+        level: "明显耗竭",
+        title: "13–20 分 · 明显耗竭",
+        text: "心力明显处于耗竭状态，值得被认真对待——这不是懒，是系统在请求暂停与支持。请优先休息、降低自我要求，必要时寻求专业或身边人的帮助。"
+      }
+    ];
+
+    const container = document.getElementById("questions");
+    const form = document.getElementById("form");
+    const result = document.getElementById("result");
+    const err = document.getElementById("err");
+    const submitStatus = document.getElementById("submitStatus");
+    let submitted = false;
+
+    QUESTIONS.forEach((text, i) => {
+      const n = i + 1;
+      const div = document.createElement("div");
+      div.className = "q";
+      div.innerHTML = `
+        <div class="q-head">
+          <span class="q-num">${n}</span>
+          <span class="q-text">${text}</span>
+        </div>
+        <div class="opts">
+          <div class="opt">
+            <input type="radio" name="q${n}" id="q${n}-yes" value="yes" required>
+            <label for="q${n}-yes">是</label>
+          </div>
+          <div class="opt">
+            <input type="radio" name="q${n}" id="q${n}-no" value="no">
+            <label for="q${n}-no">否</label>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    function collectAnswers() {
+      const answers = [];
+      let yesCount = 0;
+      for (let n = 1; n <= QUESTIONS.length; n++) {
+        const picked = form.querySelector(`input[name="q${n}"]:checked`);
+        const val = picked ? picked.value : "";
+        answers.push(val === "yes" ? "是" : val === "no" ? "否" : "");
+        if (val === "yes") yesCount++;
+      }
+      return { answers, yesCount };
+    }
+
+    function getScore() {
+      let score = 0;
+      for (let n = 1; n <= QUESTIONS.length; n++) {
+        const picked = form.querySelector(`input[name="q${n}"]:checked`);
+        if (picked && picked.value === "yes") score += 2;
+      }
+      return score;
+    }
+
+    function getVerdict(score) {
+      return VERDICTS.find((x) => score <= x.max);
+    }
+
+    function showVerdict(score) {
+      const v = getVerdict(score);
+      document.getElementById("scoreNum").textContent = score;
+      const el = document.getElementById("verdict");
+      el.className = "verdict " + v.cls;
+      el.innerHTML = `<strong>${v.title}</strong>${v.text}`;
+      return v;
+    }
+
+    function setSubmitStatus(cls, text) {
+      submitStatus.className = "submit-status show " + cls;
+      submitStatus.textContent = text;
+    }
+
+    async function sendToBackend(payload) {
+      if (!CONFIG.SUBMIT_URL || !CONFIG.SUBMIT_URL.startsWith("http")) {
+        return false;
+      }
+      setSubmitStatus("warn", "正在保存你的作答…");
+      try {
+        await fetch(CONFIG.SUBMIT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+        setSubmitStatus("ok", "你的作答已记录，感谢完成自检。");
+        return true;
+      } catch (e) {
+        setSubmitStatus("err", "网络异常，作答可能未保存，请稍后重试或联系管理员。");
+        return false;
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.classList.remove("show");
+      submitStatus.classList.remove("show");
+
+      for (let n = 1; n <= QUESTIONS.length; n++) {
+        if (!form.querySelector(`input[name="q${n}"]:checked`)) {
+          err.textContent = `第 ${n} 题还未选择，请逐题作答。`;
+          err.classList.add("show");
+          return;
+        }
+      }
+
+      if (submitted) return;
+
+      const score = getScore();
+      const v = showVerdict(score);
+      const { answers, yesCount } = collectAnswers();
+      const recordId = "R" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+      result.classList.add("show");
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "已提交";
+
+      const payload = {
+        recordId,
+        score,
+        level: v.level,
+        yesCount,
+        answers,
+        submittedAt: new Date().toISOString(),
+      };
+
+      await sendToBackend(payload);
+      submitted = true;
+    });
+
+    document.getElementById("again").addEventListener("click", () => {
+      form.reset();
+      result.classList.remove("show");
+      err.classList.remove("show");
+      submitStatus.classList.remove("show");
+      submitted = false;
+      document.getElementById("submitBtn").disabled = false;
+      document.getElementById("submitBtn").textContent = "提交并查看得分";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  </script>
+</body>
+</html>
+
+ 
